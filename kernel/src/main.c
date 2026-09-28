@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <limine.h>
-
+#include "console/console.h"
 // Set the base revision to 6, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
 // See specification for further info.
@@ -74,29 +74,28 @@ static void fb_pattern(struct limine_framebuffer *fb) {
 // If renaming kmain() to something else, make sure to change the
 // linker script accordingly.
 void kmain(void) {
-    // Ensure the bootloader actually understands our base revision (see spec).
+    // Ensure the bootloader actually understands our base revision.
     if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
         hcf();
     }
 
-    // Ensure we got a framebuffer.
+    // Ensure we received a framebuffer.
     if (framebuffer_request.response == NULL
      || framebuffer_request.response->framebuffer_count < 1) {
         hcf();
     }
 
-    // Print the pattern to every framebuffer.
-    for (uint64_t i = 0; i < framebuffer_request.response->framebuffer_count; i++) {
-        struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[i];
+    struct limine_framebuffer *framebuffer =
+        framebuffer_request.response->framebuffers[0];
 
-        // Ensure the framebuffer has 32-bit RGB pixels, the only kind we handle.
-        if (framebuffer->memory_model != LIMINE_FRAMEBUFFER_RGB || framebuffer->bpp != 32) {
-            hcf();
-        }
-
-        fb_pattern(framebuffer);
+    // Ensure we have the framebuffer format our console currently supports.
+    if (framebuffer->memory_model != LIMINE_FRAMEBUFFER_RGB
+     || framebuffer->bpp != 32) {
+        hcf();
     }
 
-    // We're done, just hang...
+    CorexConsoleInitialize(framebuffer);
+    CorexConsoleWrite("Corex NT Kernel initialized.");
+
     hcf();
 }
