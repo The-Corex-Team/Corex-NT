@@ -1,9 +1,9 @@
-#ifndef COREX_CONSOLE_H
-#define COREX_CONSOLE_H
+#ifndef CONSOLE_H
+#define CONSOLE_H
 
 #include <limine.h>
 
-void CorexConsoleInitialize(struct limine_framebuffer *framebuffer);
-void CorexConsoleWrite(const char *text);
+void console_init(struct limine_framebuffer *framebuffer);
+void console_write(const char *text);
 
 #endif

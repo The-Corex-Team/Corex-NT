@@ -94,8 +94,8 @@ void kmain(void) {
         hcf();
     }
 
-    CorexConsoleInitialize(framebuffer);
-    CorexConsoleWrite("Corex NT Kernel initialized.");
+    console_init(framebuffer);
+    console_write("Corex NT Kernel initialized.");
 
     hcf();
 }
