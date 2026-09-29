@@ -4,6 +4,8 @@
 #include "font.h"
 static struct limine_framebuffer *g_framebuffer = NULL;
 
+static size_t cursor_x = 0;
+static size_t cursor_y = 0;
 void console_init(struct limine_framebuffer *framebuffer)
 {
 	g_framebuffer = framebuffer;
@@ -46,6 +48,35 @@ static void fill_rect(
     }
 }
 
+static void scroll(size_t line_height)
+{
+    if (g_framebuffer == NULL) {
+        return;
+    }
+
+    size_t pixels_per_row = g_framebuffer->pitch / 4;
+
+    volatile uint32_t *pixels = g_framebuffer->address;
+
+    for (size_t y = 0; y + line_height < g_framebuffer->height; y++) {
+        for (size_t x = 0; x < g_framebuffer->width; x++) {
+            pixels[y * pixels_per_row + x] =
+                pixels[(y + line_height) * pixels_per_row + x];
+        }
+    }
+
+
+    for (size_t y = g_framebuffer->height - line_height;
+         y < g_framebuffer->height;
+         y++) {
+
+        for (size_t x = 0; x < g_framebuffer->width; x++) {
+            pixels[y * pixels_per_row + x] = 0x00000000;
+        }
+    }
+
+}
+
 static void draw_glyph(
     const uint8_t *glyph,
     size_t x,
@@ -76,24 +107,65 @@ static void draw_glyph(
     }
 }
 
-void console_write(const char *text)
+static void print(const char *text)
 {
-	if(g_framebuffer == NULL){
-		return;
+    if (text == NULL) {
+        return;
+    }
+
+	size_t scale = 1;
+	size_t character_width = FONT_WIDTH * scale + scale;
+	size_t character_height = FONT_HEIGHT * scale;
+
+    for (size_t index = 0; text[index] != '\0'; index++) {
+
+	if (text[index] == '\n') {
+		cursor_x = 0;
+		cursor_y += FONT_HEIGHT * scale;
+		continue;
 	}
 
-	if(text == NULL) {
-		return;
+	if(cursor_x + character_width > g_framebuffer->width){
+		cursor_x = 0;
+		cursor_y += character_height;
 	}
 
-	//volatile uint32_t *pixels = g_framebuffer->address;
-	//pixels[0] = 0x00FFFFFF;
-	// Commented cause they will not be used anymore. bye bye. but as a start yeah it might help for start in case we break anything :)
-	//put_pixel(100, 50, 0x00FFFFFF);
-	//fill_rect(100, 50, 100, 50, 0x00FFFFFF);
-	
-	const uint8_t *glyph = get_glyph('A');
+	if (cursor_y + character_height > g_framebuffer->height) {
+		scroll(character_height);
+		cursor_y -= character_height;
+	}
 
-	draw_glyph(glyph, 100, 50, 100, 0x00FFFFFF);
+	if(text[index] == ' '){
+		cursor_x += FONT_WIDTH * scale + scale;
+		continue;
+	}
+
+
+        const uint8_t *glyph = get_glyph(text[index]);
+
+        if (glyph != NULL) {
+            draw_glyph(
+                glyph,
+                cursor_x,
+                cursor_y,
+                scale,
+                0x00FFFFFF
+            );
+        }
+
+        cursor_x += FONT_WIDTH * scale + scale;
+    }
 }
 
+void console_write(const char *text)
+{
+    if (g_framebuffer == NULL) {
+        return;
+    }
+
+    if (text == NULL) {
+        return;
+    }
+
+    print(text);
+}
