@@ -133,4 +133,5 @@ struct gdt
  */
 void gdt_init(void);
 void gdt_load(struct gdt_pointer *pointer);
+void tss_load(void);
 #endif

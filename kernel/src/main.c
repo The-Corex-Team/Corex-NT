@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <limine.h>
 #include "console/console.h"
+#include "cpu/gdt.h"
+#include "cpu/idt.h"
 // Set the base revision to 6, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
 // See specification for further info.
@@ -95,6 +97,22 @@ void kmain(void) {
     }
 
 	console_init(framebuffer);
-	console_write("Hello World!");
-	hcf();
+	console_write("Hello World!\n");
+
+	gdt_init();
+	console_write("GDT:     [OK]\n");
+	console_write("TSS:     [OK]\n");
+	idt_init();
+	console_write("IDT:     [OK]\n");
+	trigger_divide_error();
+	volatile int divisor = 0;
+	volatile int result = 1 / divisor;
+	
+	(void)result;
+	
+	for (;;) {
+	
+		__asm__ volatile ("hlt");
+
+	}
 }

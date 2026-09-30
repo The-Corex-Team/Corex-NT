@@ -172,4 +172,5 @@ void gdt_init(void)
     gdtr.limit = sizeof(gdt) - 1;
     gdtr.base = (uint64_t)&gdt;
     gdt_load(&gdtr);
+    tss_load();
 }
